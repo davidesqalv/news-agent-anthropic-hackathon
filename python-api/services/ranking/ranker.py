@@ -34,16 +34,7 @@ class Ranker:
     def _raw_ranking_call(
         self, article_list_string: str, preferences: List[str]
     ) -> str:
-        if not preferences:
-            preference_list_string = (
-                "<preferenceList>I have no preferences.</preferenceList>"
-            )
-        else:
-            preference_list_string = (
-                "<preferenceList><preference>"
-                + "</preference><preference>".join(preferences)
-                + "</preference></preferenceList>"
-            )
+        preference_list_string = StringUtils.create_preference_list_string(preferences)
         return ClaudeConnector.prompt_claude_sync(
             f"""{HUMAN_PROMPT} You are my trusted personal assistant tasked with helping with my busy life.
             The following is an enumerated list of article headlines <articleList>{article_list_string}</articleList>.
@@ -63,7 +54,8 @@ class Ranker:
             self._verify_result(parsed, num_articles)
             return list(map(lambda e: e + 1, parsed))
         except Exception as e:
-            pass
+            print(e)
+            raise RankingException("Error when ranking, check backend logs")
 
     def _verify_result(self, json: Any, num_articles: int):
         if not isinstance(json, List):

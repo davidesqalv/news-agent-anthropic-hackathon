@@ -11,3 +11,11 @@ class DeduplicationResult:
 
     unique_articles: List[int]
     duplications: List[List[int]]
+
+    def get_unique_articles(self, articles: List[str]) -> List[str]:
+        return list(map(lambda i: articles[i], self.unique_articles))
+
+    def get_duplicated_articles(self, articles: List[str]) -> List[List[str]]:
+        return list(
+            map(lambda l: list(map(lambda i: articles[i], l)), self.duplications)
+        )
