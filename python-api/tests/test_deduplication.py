@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from services.deduplication.deduplication_result import DeduplicationResult
 from services.deduplication.deduplicator import DeduplicationException, Deduplicator
+from utils.string_utils import StringUtils
 
 
 class DeduplicationTest(TestCase):
@@ -11,7 +12,7 @@ class DeduplicationTest(TestCase):
     def test_create_list_string(self):
         self.assertEqual(
             "1. article1\n2. article2",
-            self.dedup._create_article_list_string(["article1", "article2"]),
+            StringUtils.create_article_list_string(["article1", "article2"]),
         )
         self.assertEqual("", self.dedup._create_article_list_string([]))
 
