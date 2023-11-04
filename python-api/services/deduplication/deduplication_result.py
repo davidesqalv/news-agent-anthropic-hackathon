@@ -9,5 +9,5 @@ class DeduplicationResult:
     `duplications` contains sets of indices of all articles that are duplicates of each other
     """
 
-    unique_articles: Set[int]
-    duplications: List[Set[int]]
+    unique_articles: List[int]
+    duplications: List[List[int]]
