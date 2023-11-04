@@ -30,7 +30,7 @@ async def read_root():
 
 @app.get("/preferences")
 async def get_preferences():
-    # TODO: In the real world, use OAuth2, build login endpoint with JWT or 
+    # TODO: In the real world, use OAuth2, build login endpoint with JWT or
     # something, verify token, account management etc
     projection = {"_id": 0, "preferences": 1}
     user_data = await user_collection.find_one({"username": DEFAULT_USER}, projection)
@@ -45,7 +45,8 @@ async def get_preferences():
 async def add_preference(preference: str):
     """Adds a preference for the logged in user to the DB"""
     await user_collection.update_one(
-        {"username": DEFAULT_USER}, {"$push": {"$.preferences": preference}}
+        {"username": DEFAULT_USER},
+        {"$push": {"preferences": preference}},
     )
 
 
@@ -53,5 +54,59 @@ async def add_preference(preference: str):
 async def add_preference(preference: str):
     """Removes a preference for the logged in user from the DB"""
     await user_collection.update_one(
-        {"username": DEFAULT_USER}, {"$pull": {"$.preferences": preference}}
+        {"username": DEFAULT_USER}, {"$pull": {"preferences": preference}}
+    )
+
+
+@app.get("/feeds")
+async def get_feeds():
+    # TODO: In the real world, use OAuth2, build login endpoint with JWT or
+    # something, verify token, account management etc
+    projection = {"_id": 0, "feeds": 1}
+    user_data = await user_collection.find_one({"username": DEFAULT_USER}, projection)
+    feeds = user_data.get("feeds")
+
+    # for testing purposes
+    print(f"feeds: {feeds}")
+    return feeds
+
+
+@app.post("/feed")
+async def add_feed(feed: str):
+    """Adds a preference for the logged in user to the DB"""
+    await user_collection.update_one(
+        {"username": DEFAULT_USER},
+        {"$push": {"feeds": feed}},
+    )
+
+
+@app.delete("/feed")
+async def add_feed(feed: str):
+    """Removes a preference for the logged in user from the DB"""
+    await user_collection.update_one(
+        {"username": DEFAULT_USER}, {"$pull": {"feeds": feed}}
+    )
+
+
+# TODO implement
+@app.post("/generate-digest")
+async def generate_digest():
+    pass
+
+
+# TODO implement
+@app.post("/upvote")
+async def upvote_article(article_id: str):
+    """Records an upvote by a user to an article"""
+    await user_collection.update_one(
+        {"username": DEFAULT_USER}, {"$push": {"upvotes": article_id}}
+    )
+
+
+# TODO implement
+@app.post("/downvote")
+async def downvote_article(article_id: str):
+    """Records an upvote by a user to an article"""
+    await user_collection.update_one(
+        {"username": DEFAULT_USER}, {"$push": {"downvotes": article_id}}
     )

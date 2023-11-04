@@ -10,12 +10,13 @@ class DBConnector:
 
     def __init__(self) -> None:
         self.client = AsyncIOMotorClient(os.environ.get("MONGO_CLIENT"))
+        self.db = self.client["news-agent-database"]
 
     def get_user_collection(self):
-        return self.client[DBConnector.DB_NAME_USER_PROFILES]
+        return self.db[DBConnector.DB_NAME_USER_PROFILES]
 
     def get_incoming_data_collection(self):
-        return self.client[DBConnector.DB_NAME_INCOMING_DATA]
+        return self.db[DBConnector.DB_NAME_INCOMING_DATA]
 
     def get_generated_digests_collection(self):
-        return self.client[DBConnector.DB_NAME_GENERATED_DIGESTS]
+        return self.db[DBConnector.DB_NAME_GENERATED_DIGESTS]
