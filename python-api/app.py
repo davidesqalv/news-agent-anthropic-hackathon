@@ -20,50 +20,38 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 conn = DBConnector()
 user_collection = conn.get_user_collection()
 
+DEFAULT_USER = "test"
+
 
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/token")
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    # TODO implement OAuth2
-    # TODO replace mytoken with the actual token
-    return {"access_token": "mytoken", "token_type": "bearer"}
-
-
 @app.get("/preferences")
-async def get_preferences(token: Annotated[str, Depends(oauth2_scheme)]):
-    # TODO: verify the token
-
+async def get_preferences():
+    # TODO: In the real world, use OAuth2, build login endpoint with JWT or 
+    # something, verify token, account management etc
     projection = {"_id": 0, "preferences": 1}
-
-    user_data = await user_collection.find_one({"username": "test"}, projection)
-
+    user_data = await user_collection.find_one({"username": DEFAULT_USER}, projection)
     preferences = user_data.get("preferences")
 
     # for testing purposes
     print(f"preferences: {preferences}")
-
     return preferences
 
 
 @app.post("/preference")
-async def add_preference(
-    token: Annotated[str, Depends(oauth2_scheme)], preference: str
-):
+async def add_preference(preference: str):
     """Adds a preference for the logged in user to the DB"""
     await user_collection.update_one(
-        {"username": "test"}, {"$push": {"$.preferences": preference}}
+        {"username": DEFAULT_USER}, {"$push": {"$.preferences": preference}}
     )
 
 
 @app.delete("/preference")
-async def add_preference(
-    token: Annotated[str, Depends(oauth2_scheme)], preference: str
-):
+async def add_preference(preference: str):
     """Removes a preference for the logged in user from the DB"""
     await user_collection.update_one(
-        {"username": "test"}, {"$pull": {"$.preferences": preference}}
+        {"username": DEFAULT_USER}, {"$pull": {"$.preferences": preference}}
     )
