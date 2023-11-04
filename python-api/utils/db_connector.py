@@ -13,3 +13,9 @@ class DBConnector:
 
     def get_user_collection(self):
         return self.client[DBConnector.DB_NAME_USER_PROFILES]
+
+    def get_incoming_data_collection(self):
+        return self.client[DBConnector.DB_NAME_INCOMING_DATA]
+
+    def get_generated_digests_collection(self):
+        return self.client[DBConnector.DB_NAME_GENERATED_DIGESTS]
