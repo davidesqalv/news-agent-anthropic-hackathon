@@ -48,6 +48,7 @@ export default function OnboardingClient() {
     "Entertainment",
     "Science",
     "Business",
+    "Health",
   ]);
   const [selectedPreferences, setSelectedPreferences] = useState([]);
   const [extraTags, setExtraTags] = useState("");
@@ -135,7 +136,8 @@ export default function OnboardingClient() {
             >
               {tag}
               <button
-                className="absolute top-0 right-0 px-2 py-1"
+                className="absolute top-0 right-0 px-2 py-1 text-center"
+                style={{ padding: "2px 6px", margin: "2px" }}
                 onClick={() => handleRemoveTagClick(tag)}
               >
                 x
