@@ -94,7 +94,6 @@ async def generate_digest():
     pass
 
 
-# TODO implement
 @app.post("/upvote")
 async def upvote_article(article_id: str):
     """Records an upvote by a user to an article"""
@@ -103,7 +102,6 @@ async def upvote_article(article_id: str):
     )
 
 
-# TODO implement
 @app.post("/downvote")
 async def downvote_article(article_id: str):
     """Records an upvote by a user to an article"""
