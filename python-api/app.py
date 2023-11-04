@@ -1,25 +1,24 @@
 from typing import Annotated
 
+from dotenv import find_dotenv, load_dotenv
 from fastapi import Depends, FastAPI
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import find_dotenv, load_dotenv
-from os import environ as env
+from utils.db_connector import DBConnector
 
-
-app = FastAPI()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
+# Main backend app. Run with e.g. `uvicorn app:app --host 0.0.0.0 --port 7243` from
+# within the `python-api` folder
 
 # Loading env variables
 ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
 
-# Set up a connection to your MongoDB database using Motor
-client = AsyncIOMotorClient(env.get("MONGO_CLIENT"))
-user_collection = client["user-profiles"]
+app = FastAPI()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+conn = DBConnector()
+user_collection = conn.get_user_collection()
 
 
 @app.get("/")
@@ -37,12 +36,6 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 @app.get("/preferences")
 async def get_preferences(token: Annotated[str, Depends(oauth2_scheme)]):
     # TODO: verify the token
-
-    # preferences = [
-    #     "Artificial Intelligence",
-    #     "UK Politics",
-    #     "Russia-Ukraine War",
-    # ]  # TODO: Look up the user's preferences in the DB
 
     projection = {"_id": 0, "preferences": 1}
 

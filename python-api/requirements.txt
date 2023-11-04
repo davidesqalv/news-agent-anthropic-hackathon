@@ -1,8 +1,7 @@
 anthropic
 fastapi
-# pymongo[srv]
-uvicorn
-python-dotenv
-
-pymongo
 motor
+pymongo
+python-dotenv
+python-multipart
+uvicorn

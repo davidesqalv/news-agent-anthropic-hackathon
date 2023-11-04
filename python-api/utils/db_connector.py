@@ -1,7 +1,15 @@
+import os
+
+from motor.motor_asyncio import AsyncIOMotorClient
+
+
 class DBConnector:
     DB_NAME_USER_PROFILES = "user-profiles"
     DB_NAME_INCOMING_DATA = "incoming-data"
     DB_NAME_GENERATED_DIGESTS = "generated-digests"
 
     def __init__(self) -> None:
-        pass
+        self.client = AsyncIOMotorClient(os.environ.get("MONGO_CLIENT"))
+
+    def get_user_collection(self):
+        return self.client[DBConnector.DB_NAME_USER_PROFILES]
