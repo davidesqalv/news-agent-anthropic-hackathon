@@ -47,3 +47,23 @@ async def get_preferences(token: Annotated[str, Depends(oauth2_scheme)]):
     print(f"preferences: {preferences}")
 
     return preferences
+
+
+@app.post("/preference")
+async def add_preference(
+    token: Annotated[str, Depends(oauth2_scheme)], preference: str
+):
+    """Adds a preference for the logged in user to the DB"""
+    await user_collection.update_one(
+        {"username": "test"}, {"$push": {"$.preferences": preference}}
+    )
+
+
+@app.delete("/preference")
+async def add_preference(
+    token: Annotated[str, Depends(oauth2_scheme)], preference: str
+):
+    """Removes a preference for the logged in user from the DB"""
+    await user_collection.update_one(
+        {"username": "test"}, {"$pull": {"$.preferences": preference}}
+    )
