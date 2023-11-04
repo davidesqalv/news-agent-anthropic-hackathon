@@ -4,6 +4,8 @@ from typing import List
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
 
+from services.profiles.user_profile import UserProfile
+from services.rank_and_dedup.rank_and_dedup import RankAndDedup
 from utils.article import Article
 from utils.db_connector import DBConnector
 
@@ -93,7 +95,15 @@ async def add_feed(feed: str):
 @app.post("/generate-digest")
 async def generate_digest():
     yesterday_ts = datetime.now() - timedelta(days=1)
-    articles = fetch_articles_since(DEFAULT_USER, yesterday_ts)
+    articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
+    profile = await fetch_user_profile(DEFAULT_USER)
+    rank_and_dedup_service = RankAndDedup()
+    output = rank_and_dedup_service.rank_and_deduplicate(
+        list(map(lambda a: a.extracted_content, articles)), profile, 10
+    )
+    print(output)
+    # TODO store in DB
+    return output
 
 
 # TODO implement using separate rank and dedup
@@ -137,6 +147,14 @@ async def fetch_articles_since(username: str, timestamp: datetime) -> List[Artic
             )
         )
     return articles
+
+
+async def fetch_user_profile(username: str) -> UserProfile:
+    user_data = await user_collection.find_one(
+        {"username": username}, {"_id": 0, "preferences": 1}
+    )
+    preferences = user_data.get("preferences")
+    return UserProfile(preferences)
 
 
 def get_email_from_username(username: str) -> str:
