@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function NavBar() {
   return (
     <nav class="fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-6 md:flex-row md:justify-start md:space-x-6 bg-transparent">
@@ -8,15 +10,15 @@ export default function NavBar() {
         </button>
       </div>
       <div class="hidden md:block space-x-4">
-        <a class="text-gray-400 hover:text-white" href="#">
+        <Link class="text-gray-400 hover:text-white" href={"/"}>
           Home
-        </a>
-        <a class="text-gray-400 hover:text-white" href="#">
+        </Link>
+        <Link class="text-gray-400 hover:text-white" href={"/"}>
           About
-        </a>
-        <a class="text-gray-400 hover:text-white" href="#">
+        </Link>
+        <Link class="text-gray-400 hover:text-white" href={"/"}>
           Contact
-        </a>
+        </Link>
       </div>
     </nav>
   );

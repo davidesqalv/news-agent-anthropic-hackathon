@@ -53,6 +53,9 @@ export default function OnboardingClient() {
   const [selectedPreferences, setSelectedPreferences] = useState([]);
   const [extraTags, setExtraTags] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [redirectPage, setRedirectPage] = useState(false);
 
   const handlePreferenceClick = (preference) => {
     if (selectedPreferences.includes(preference)) {
@@ -64,9 +67,26 @@ export default function OnboardingClient() {
     }
   };
 
+  // const handleAddTagClick = () => {
+  //   if (extraTags.trim() !== "") {
+  //     setSelectedTags([...selectedTags, extraTags.trim()]);
+  //     setExtraTags("");
+  //   }
+  // };
+
   const handleAddTagClick = () => {
     if (extraTags.trim() !== "") {
-      setSelectedTags([...selectedTags, extraTags.trim()]);
+      const newTag = extraTags
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      if (
+        !selectedTags
+          .map((tag) => tag.toLowerCase().replace(/[^a-z0-9]/g, ""))
+          .includes(newTag)
+      ) {
+        setSelectedTags([...selectedTags, extraTags.trim()]);
+      }
       setExtraTags("");
     }
   };
@@ -74,6 +94,38 @@ export default function OnboardingClient() {
   const handleRemoveTagClick = (tag) => {
     setSelectedTags(selectedTags.filter((t) => t !== tag));
   };
+
+  const handleDoneClick = () => {
+    setLoading(true);
+    const allTags = [
+      ...selectedTags,
+      ...extraTags.split(" ").filter((tag) => tag !== ""),
+    ];
+    fetch("https://example.com/upload-tags", {
+      method: "POST",
+      body: JSON.stringify(allTags),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to upload tags");
+        }
+        setLoading(false);
+        // handle successful response
+        setRedirectPage(true);
+      })
+      .catch((error) => {
+        console.error(error);
+        setLoading(false);
+        // handle error
+      });
+  };
+
+  if (redirectPage) {
+    redirect("/schedule");
+  }
 
   return (
     <motion.div
@@ -83,7 +135,9 @@ export default function OnboardingClient() {
       animate="visible"
     >
       <motion.div variants={itemVariants}>
-        <h1 className="text-white text-3xl font-bold">Welcome to News Agent</h1>
+        <h1 className="text-white text-3xl font-bold font-serif">
+          Welcome to dAIly digest
+        </h1>
       </motion.div>
       <motion.div variants={itemVariants}>
         <p className="text-white text-lg">
@@ -111,7 +165,7 @@ export default function OnboardingClient() {
         <div className="flex items-center space-x-2">
           <input
             type="text"
-            placeholder="Add extra tags"
+            placeholder="Add extra preferences"
             className="border border-gray-300 rounded-md px-4 py-2 w-64"
             value={extraTags}
             onChange={(e) => setExtraTags(e.target.value)}
@@ -145,6 +199,21 @@ export default function OnboardingClient() {
             </motion.div>
           ))}
         </div>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        {loading ? (
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 border-4 border-gray-200 rounded-full animate-spin"></div>
+            <p className="text-white">Processing your preferences...</p>
+          </div>
+        ) : (
+          <button
+            className="px-4 py-2 rounded-md bg-gray-500 text-white"
+            onClick={handleDoneClick}
+          >
+            Done
+          </button>
+        )}
       </motion.div>
     </motion.div>
   );

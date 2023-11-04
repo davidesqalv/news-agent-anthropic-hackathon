@@ -1,9 +1,17 @@
-import { Inter } from "next/font/google";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+
 import "./globals.css";
 
 import NavBar from "@/components/navBar";
 
-const inter = Inter({ subsets: ["latin"] });
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--playfair-display",
+});
+const dm_sans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--dm-sans",
+});
 
 export const metadata = {
   title: "Create Next App",
@@ -12,8 +20,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`${playfair.variable} ${dm_sans.variable}`}>
+      <body>
         <NavBar />
 
         {children}

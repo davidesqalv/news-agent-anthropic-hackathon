@@ -14,6 +14,13 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
+  font-feature-settings: "liga", "kern";
+  text-rendering: optimizeLegibility;
+}
+
 body {
 }
 
