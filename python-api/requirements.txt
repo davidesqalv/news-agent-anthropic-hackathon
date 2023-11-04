@@ -1,3 +1,4 @@
 anthropic
 fastapi
+pymongo[srv]
 uvicorn
