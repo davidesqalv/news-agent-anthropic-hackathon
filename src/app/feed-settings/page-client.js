@@ -79,7 +79,7 @@ export default function FeedSettingsClient() {
 
   const generateRandomEmail = () => {
     const id = generateRandomId();
-    setRandomEmail(`newsletter-${id}@`);
+    setRandomEmail(`newsletter-${id}@rituai.email`);
   };
 
   const handleCopyEmail = () => {
