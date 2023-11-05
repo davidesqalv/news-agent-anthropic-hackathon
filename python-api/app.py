@@ -98,7 +98,8 @@ async def delete_feed(feed: str):
 # TODO implement using single rank and dedup
 @app.post("/generate-digest")
 async def generate_digest():
-    yesterday_ts = datetime.now() - timedelta(days=1)
+    now = datetime.now()
+    yesterday_ts = now - timedelta(days=1)
     articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
     profile = await fetch_user_profile(DEFAULT_USER)
     rank_and_dedup_service = RankAndDedup()
@@ -108,14 +109,15 @@ async def generate_digest():
     # For debugging
     print(output)
     digests_coll = conn.get_generated_digests_collection()
-    await digests_coll.update_one(
-        {"username": DEFAULT_USER}, {"$push": {"digests": output}}
+    await digests_coll.insert_one(
+        {"username": DEFAULT_USER, "generated_at": now, "digest": output}
     )
 
 
 @app.post("/generate-digest-chained")
 async def generate_digest_chained():
-    yesterday_ts = datetime.now() - timedelta(days=1)
+    now = datetime.now()
+    yesterday_ts = now - timedelta(days=1)
     articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
     articles_raw = list(map(lambda a: a.extracted_content, articles))
     profile = await fetch_user_profile(DEFAULT_USER)
@@ -132,9 +134,12 @@ async def generate_digest_chained():
     # for Debugging
     print(ranked_articles)
     digests_coll = conn.get_generated_digests_collection()
-    digests_coll.update_one(
-        {"username": DEFAULT_USER},
-        {"$push": {"digests": dict(zip(range(len(ranked_articles)), ranked_articles))}},
+    digests_coll.insert_one(
+        {
+            "username": DEFAULT_USER,
+            "timestamp": now,
+            "digest_dict": dict(zip(range(len(ranked_articles)), ranked_articles)),
+        },
     )
 
 
