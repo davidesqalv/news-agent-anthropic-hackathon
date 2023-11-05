@@ -1,4 +1,4 @@
-import FeedSettingsClient from "./page-settings";
+import FeedSettingsClient from "./page-client";
 
 export const metadata = {
   title: "Feed Settings",
