@@ -79,7 +79,7 @@ export default function FeedSettingsClient() {
 
   const generateRandomEmail = () => {
     const id = generateRandomId();
-    setRandomEmail(`newsletter-${id}@example.com`);
+    setRandomEmail(`newsletter-${id}@`);
   };
 
   const handleCopyEmail = () => {
