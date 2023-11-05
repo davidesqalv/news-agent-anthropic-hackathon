@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { redirect } from "next/navigation";
 
 const containerVariants = {
   hidden: {
@@ -39,6 +40,8 @@ const tagVariants = {
     },
   },
 };
+
+const API_URL = process.env.API_URL;
 
 export default function OnboardingClient() {
   const [preferences, setPreferences] = useState([
@@ -98,10 +101,14 @@ export default function OnboardingClient() {
   const handleDoneClick = () => {
     setLoading(true);
     const allTags = [
+      ...selectedPreferences,
       ...selectedTags,
       ...extraTags.split(" ").filter((tag) => tag !== ""),
     ];
-    fetch("https://example.com/upload-tags", {
+    console.log(`selected: ${selectedTags}`);
+    console.log(`extra: ${extraTags}`);
+    console.log(allTags);
+    fetch(`${API_URL}/preferences`, {
       method: "POST",
       body: JSON.stringify(allTags),
       headers: {
@@ -114,6 +121,8 @@ export default function OnboardingClient() {
         }
         setLoading(false);
         // handle successful response
+        console.log(`response:`);
+        console.log(response);
         setRedirectPage(true);
       })
       .catch((error) => {
@@ -163,23 +172,6 @@ export default function OnboardingClient() {
         </div>
       </motion.div>
       <motion.div variants={itemVariants}>
-        <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            placeholder="Add extra preferences"
-            className="border border-gray-300 rounded-md px-4 py-2 w-64"
-            value={extraTags}
-            onChange={(e) => setExtraTags(e.target.value)}
-          />
-          <button
-            className="px-4 py-2 rounded-md bg-gray-500 text-white"
-            onClick={handleAddTagClick}
-          >
-            Add
-          </button>
-        </div>
-      </motion.div>
-      <motion.div variants={itemVariants}>
         <div className="flex flex-wrap justify-center">
           {selectedTags.map((tag) => (
             <motion.div
@@ -201,6 +193,24 @@ export default function OnboardingClient() {
           ))}
         </div>
       </motion.div>
+      <motion.div variants={itemVariants}>
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            placeholder="Add extra preferences"
+            className="border border-gray-300 rounded-md px-4 py-2 w-64"
+            value={extraTags}
+            onChange={(e) => setExtraTags(e.target.value)}
+          />
+          <button
+            className="px-4 py-2 rounded-md bg-gray-500 text-white"
+            onClick={handleAddTagClick}
+          >
+            Add
+          </button>
+        </div>
+      </motion.div>
+
       <motion.div variants={itemVariants}>
         {loading ? (
           <div className="flex items-center space-x-2">

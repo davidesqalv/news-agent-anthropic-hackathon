@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { redirect } from "next/navigation";
 
 const containerVariants = {
   hidden: {
@@ -15,15 +16,72 @@ const containerVariants = {
   },
 };
 
+const API_URL = process.env.API_URL;
+
 export default function ScheduleClient() {
   const [isDaily, setIsDaily] = useState(true);
   const [selectedTime, setSelectedTime] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
 
+  const [redirectPage, setRedirectPage] = useState(false);
+
   const handleDoneClick = () => {
-    console.log(`Selected time: ${selectedTime}`);
-    console.log(`Selected day: ${selectedDay}`);
+    console.log("selectedTime");
+    console.log(selectedTime);
+
+    // Convert selectedTime to HH:mm format
+    const [hours, minutes] = selectedTime.split(":");
+    let formattedHours = parseInt(hours);
+    if (formattedHours === 12 && selectedTime.includes("AM")) {
+      formattedHours = 0;
+    } else if (formattedHours !== 12 && selectedTime.includes("PM")) {
+      formattedHours += 12;
+    }
+    const formattedTime = `${formattedHours
+      .toString()
+      .padStart(2, "0")}:${minutes}`;
+
+    // const data = {
+    //   is_daily: isDaily,
+    //   reminder_time: formattedTime,
+    //   day: selectedDay,
+    // };
+
+    const data = {
+      is_daily: isDaily,
+      reminder_time: formattedTime,
+      day: selectedDay,
+    };
+
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    };
+
+    console.log("sending over");
+    console.log(data);
+
+    fetch(`${API_URL}/schedule`, options)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        setRedirectPage(true);
+      })
+      .then((data) => {
+        console.log("Success:", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   };
+
+  if (redirectPage) {
+    redirect("/feed-settings");
+  }
 
   return (
     <motion.div

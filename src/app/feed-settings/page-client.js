@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FiCopy } from "react-icons/fi";
+import { redirect } from "next/navigation";
+
+const API_URL = process.env.API_URL;
 
 function generateRandomId(length = 10) {
   const charset =
@@ -64,6 +67,7 @@ export default function FeedSettingsClient() {
   const [selectedFeeds, setSelectedFeeds] = useState([]);
   const [randomEmail, setRandomEmail] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [redirectPage, setredirectPage] = useState(false);
 
   const handleFeedSelection = (feed) => {
     if (selectedFeeds.includes(feed)) {
@@ -87,19 +91,24 @@ export default function FeedSettingsClient() {
   };
 
   const handleDone = () => {
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ selectedFeeds, randomEmail }),
-    };
-    fetch("/api/subscribe", requestOptions)
-      .then((response) => response.json())
-      .then((data) => console.log(data));
+    // const requestOptions = {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ selectedFeeds, randomEmail }),
+    // };
+    // fetch("/api/subscribe", requestOptions)
+    //   .then((response) => response.json())
+    //   .then((data) => console.log(data));
+    setredirectPage(true);
   };
 
   useEffect(() => {
     generateRandomEmail();
   }, []);
+
+  if (redirectPage) {
+    return redirect("/feed");
+  }
 
   return (
     <motion.div
@@ -138,7 +147,7 @@ export default function FeedSettingsClient() {
         </div>
         <div className="w-1/2 p-4">
           <h2 className="text-white text-2xl font-bold mb-4 font-serif">
-            Use a Random Email
+            Email Newsletters
           </h2>
           <p className="text-white text-lg mb-2">
             To integrate newsletters into your AI digest, please use the

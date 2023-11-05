@@ -1,9 +1,16 @@
+import json
+import re
+
 from datetime import datetime, timedelta
 from typing import List, Optional
 from unittest.mock import DEFAULT
 
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
+from fastapi.requests import Request
+from fastapi.middleware.cors import CORSMiddleware
+
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from services.article_merger.article_merger import ArticleMerger
 from services.deduplication.deduplicator import Deduplicator
@@ -13,7 +20,7 @@ from services.ranking.ranker import Ranker
 from utils.article import Article
 from utils.db_connector import DBConnector
 
-# Main backend app. Run with e.g. `uvicorn app:app --host 0.0.0.0 --port 7243` from
+# Main backend app. Run with e.g. `uvicorn app:app --host 0.0.0.0 --port 8000` from
 # within the `python-api` folder
 
 # Loading env variables
@@ -23,11 +30,48 @@ if ENV_FILE:
 
 app = FastAPI()
 
+# CORS middleware stuff so that the frontend can access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://rituai.com",
+        "https://www.rituai.com",
+    ],  # Update with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 conn = DBConnector()
 user_collection = conn.get_user_collection()
 
 DEFAULT_USER = "test"
 MAX_DOCUMENTS_TO_QUERY_FROM_DB = 500
+
+
+async def update_user_fields(
+    users: AsyncIOMotorCollection, username: str, update_fields: dict
+):
+    try:
+        # Construct the update query
+        update_query = {"$set": {}, "$push": {}}
+        for key, value in update_fields.items():
+            if isinstance(value, list):
+                update_query["$push"][key] = {"$each": value}
+            else:
+                update_query["$set"][key] = value
+
+        update_result = await users.update_one(
+            {"username": username},
+            update_query,
+        )
+
+        return update_result.modified_count > 0 or update_result.upserted_id is not None
+    except Exception as e:
+        print(f"error updating user {username}")
+        print(e)
+        return False
 
 
 @app.get("/")
@@ -57,6 +101,15 @@ async def add_preference(preference: str):
     )
 
 
+@app.post("/preferences")
+async def add_preferences(preferences: List[str]):
+    """Adds preferences for the logged in user to the DB"""
+    await user_collection.update_one(
+        {"username": DEFAULT_USER},
+        {"$addToSet": {"preferences": {"$each": preferences}}},
+    )
+
+
 @app.delete("/preference")
 async def delete_preference(preference: str):
     """Removes a preference for the logged in user from the DB"""
@@ -81,10 +134,11 @@ async def get_feeds():
 @app.post("/feed")
 async def add_feed(feed: str):
     """Adds a preference for the logged in user to the DB"""
-    await user_collection.update_one(
-        {"username": DEFAULT_USER},
-        {"$push": {"feeds": feed}},
-    )
+    # await user_collection.update_one(
+    #     {"username": DEFAULT_USER},
+    #     {"$push": {"feeds": feed}},
+    # )
+    await update_user_fields(user_collection, DEFAULT_USER, {"feeds": [feed]})
 
 
 @app.delete("/feed")
@@ -94,6 +148,18 @@ async def delete_feed(feed: str):
         {"username": DEFAULT_USER}, {"$pull": {"feeds": feed}}
     )
 
+def parse_articles(text):
+    articles = []
+
+    for match in re.finditer(r"(\d+)\.", text, re.DOTALL):
+        number = match.group(1)
+        title = ""
+        summary = ""
+        
+        article = {"number": number, "title": title, "summary": summary}
+        articles.append(article)
+
+    return json.dumps(articles, indent=2)
 
 # TODO implement using single rank and dedup
 @app.post("/generate-digest")
@@ -101,7 +167,9 @@ async def generate_digest():
     now = datetime.now()
     yesterday_ts = now - timedelta(days=1)
     articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
+    print('getting profile')
     profile = await fetch_user_profile(DEFAULT_USER)
+    print('ranking and deduping')
     rank_and_dedup_service = RankAndDedup()
     output = rank_and_dedup_service.rank_and_deduplicate(
         list(map(lambda a: a.extracted_content, articles)), profile, 10
@@ -112,6 +180,20 @@ async def generate_digest():
     await digests_coll.insert_one(
         {"username": DEFAULT_USER, "generated_at": now, "digest": output}
     )
+    # return parse_articles(output)
+    return output
+
+# @app.get("/last-generated-digest")
+# async def get_last_generated_digest():
+#     digests_coll = conn.get_generated_digests_collection()
+#     last_digest = await digests_coll.find_one(
+#         {"username": DEFAULT_USER},
+#         sort=[("generated_at", pymongo.DESCENDING)]
+#     )
+#     if last_digest:
+#         return dumps(last_digest["digest"])
+#     else:
+#         return "No digest found"
 
 
 @app.post("/generate-digest-chained")
@@ -146,31 +228,71 @@ async def generate_digest_chained():
 @app.post("/upvote")
 async def upvote_article(article_id: str):
     """Records an upvote by a user to an article"""
-    await user_collection.update_one(
-        {"username": DEFAULT_USER}, {"$push": {"upvotes": article_id}}
-    )
+    # await user_collection.update_one(
+    #     {"username": DEFAULT_USER}, {"$push": {"upvotes": article_id}}
+    # )
 
+    await update_user_fields(user_collection, DEFAULT_USER, {"upvotes": [article_id]})
 
 @app.post("/downvote")
 async def downvote_article(article_id: str):
     """Records an upvote by a user to an article"""
-    await user_collection.update_one(
-        {"username": DEFAULT_USER}, {"$push": {"downvotes": article_id}}
-    )
+    # await user_collection.update_one(
+    #     {"username": DEFAULT_USER}, {"$push": {"downvotes": article_id}}
+    # )
+    await update_user_fields(user_collection, DEFAULT_USER, {"downvotes": [article_id]})
+
+
+# @app.post("/schedule")
+# async def add_user_schedule(is_daily: bool, reminder_time: str, day: str):
+#     """Adds a preference for the logged in user to the DB"""
+#     # await user_collection.update_one(
+#     #     {"username": DEFAULT_USER},
+#     #     {
+#     #         "schedule": {
+#     #             "is_daily": is_daily,
+#     #             "reminder_time": reminder_time,
+#     #             "day": day,
+#     #         }
+#     #     },
+#     # )
+#     await update_user_fields(
+#         user_collection,
+#         DEFAULT_USER,
+#         {
+#             "schedule": {
+#                 "is_daily": is_daily,
+#                 "reminder_time": reminder_time,
+#                 "day": day,
+#             }
+#         },
+#     )
 
 
 @app.post("/schedule")
-async def add_user_schedule(
-    is_daily: bool, reminder_time: datetime, day: Optional[str]
-):
+async def add_user_schedule(request: Request):
+    payload = await request.json()
+    print(payload)
     """Adds a preference for the logged in user to the DB"""
-    await user_collection.insert_one(
-        {"username": DEFAULT_USER},
+    # await user_collection.update_one(
+    #     {"username": DEFAULT_USER},
+    #     {
+    #         "schedule": {
+    #             "is_daily": payload["is_daily"],
+    #             "reminder_time": payload["reminder_time"],
+    #             "day": payload["day"],
+    #         }
+    #     },
+    # )
+
+    await update_user_fields(
+        user_collection,
+        DEFAULT_USER,
         {
             "schedule": {
-                "is_daily": is_daily,
-                "reminder_time": reminder_time,
-                "day": day,
+                "is_daily": payload["is_daily"],
+                "reminder_time": payload["reminder_time"],
+                "day": payload["day"],
             }
         },
     )

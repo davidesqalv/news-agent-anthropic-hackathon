@@ -29,57 +29,69 @@ const articleVariants = {
   },
 };
 
-const articles = [
-  {
-    title: "Article 1",
-    description: "Description for article 1",
-    link: "https://www.reuters.com/world/middle-east/arab-world-us-split-gaza-ceasefire-israeli-offensive-presses-2023-11-05/",
-  },
-  {
-    title: "Article 2",
-    description: "Description for article 2",
-    link: "https://www.nytimes.com/2023/11/04/us/politics/trump-desantis-florida.html",
-  },
-  {
-    title: "Article 3",
-    description: "Description for article 3",
-    link: "https://www.bbc.co.uk/news/uk-england-devon-67311250",
-  },
-];
-
-async function getArticleImage(articleUrl) {
-  const apiKey = "pk_70fe81f7aea300606721c526258fd22558ca2738";
-  const apiUrl = `https://jsonlink.io/api/extract?url=${articleUrl}&api_key=${apiKey}`;
-
-  const response = await fetch(apiUrl);
-  if (!response.ok) {
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
-  }
-  const responseJson = await response.json();
-
-  //   console.log(responseJson);
-  return responseJson.images[0];
-}
+const API_URL = process.env.API_URL;
 
 export default function FeedClient() {
-  const [votes, setVotes] = useState(articles.map(() => 0));
-  const [images, setImages] = useState(articles.map(() => ""));
+  const [articles, setArticles] = useState([]);
+  const [votes, setVotes] = useState([]);
+  const [images, setImages] = useState([]);
+  const [response, setResponse] = useState("");
+  const [responseRequested, setResponseRequested] = useState(false);
+
+  async function getArticleImage(articleUrl) {
+    const apiKey = "pk_70fe81f7aea300606721c526258fd22558ca2738";
+    const apiUrl = `https://jsonlink.io/api/extract?url=${articleUrl}&api_key=${apiKey}`;
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    }
+    const responseJson = await response.json();
+
+    //   console.log(responseJson);
+    return responseJson.images[0];
+  }
 
   useEffect(() => {
-    async function fetchImages() {
-      const newImages = [];
-      for (let i = 0; i < articles.length; i++) {
-        const imageUrl = await getArticleImage(articles[i].link);
-        newImages.push(imageUrl);
-      }
-      setImages(newImages);
+    function fetchArticles() {
+      setResponseRequested(true);
+      const options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      };
+      fetch(`${API_URL}/generate-digest`, options)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Error: ${response.status} - ${response.statusText}`
+            );
+          }
+          return response.json();
+        })
+        .then((responseJson) => {
+          console.log("repsonse");
+          console.log(responseJson);
+          // setArticles(responseJson.digest);
+          // setVotes(responseJson.digest.map(() => 0));
+          // const newImages = [];
+          // for (let i = 0; i < responseJson.digest.length; i++) {
+          //   const imageUrl = await getArticleImage(responseJson.digest[i].link);
+          //   newImages.push(imageUrl);
+          // }
+          // setImages(newImages);
+          setResponse(responseJson);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     }
-    fetchImages();
-  }, []);
-
-  //   useEffect(() => {
-  //     console.log(images);
-  //   }, [images]);
+    if (!responseRequested) {
+      fetchArticles();
+    }
+  }, [responseRequested]);
 
   const handleVote = (index, value) => {
     const newVotes = [...votes];
@@ -89,69 +101,82 @@ export default function FeedClient() {
 
   return (
     <motion.div
-      className="w-full h-screen bg-black flex flex-col items-center justify-center space-y-6 animate-all"
+      className="w-full h-screen bg-black flex items-center justify-center flex-col space-y-6 animate-all"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       <h1 className="text-3xl font-bold text-white font-serif">Feed</h1>
 
-      <div className="grid grid-cols-1 gap-4 w-full max-w-6xl">
-        <p className="text-white text-center">
-          Here&apos;s your ritual AI curated feed. You can upvote or downvote
-          articles to help us learn your preferences.
-        </p>
-        {articles.map((article, index) => (
-          <motion.div // wrap article in motion.div
-            key={index}
-            className="bg-gray-800 rounded-lg overflow-hidden shadow-md flex flex-row items-center space-x-4 p-4"
-            variants={articleVariants} // add variants
+      {response === "" ? (
+        <div className="flex justify-center items-center">
+          <svg
+            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
           >
-            <div className="relative h-16 w-16">
-              {images[index] ? (
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647zM12 20.735A7.962 7.962 0 0112 12v-4H8.063l3.647-3.646 1.414 1.414L10.891 7H12a6 6 0 100 12z"
+            ></path>
+          </svg>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 w-full max-w-6xl">
+          {/* {articles.map((article, index) => (
+            <motion.div
+              key={article.title}
+              className="bg-white rounded-lg shadow-lg overflow-hidden"
+              variants={articleVariants}
+            >
+              <div className="relative h-48">
                 <Image
                   src={images[index]}
                   alt={article.title}
                   layout="fill"
                   objectFit="cover"
                 />
-              ) : (
-                <img
-                  src="https://via.placeholder.com/200x300.png?text=Loading..."
-                  alt="Loading..."
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-            <div className="flex flex-col w-full">
-              <a href={article.link} target="_blank" rel="noopener noreferrer">
-                <h2 className="text-xl font-bold text-white font-serif">
-                  {article.title}
-                </h2>
-              </a>
-              <a href={article.link} target="_blank" rel="noopener noreferrer">
-                <p className="text-gray-400">{article.description}</p>
-              </a>
-              <div className="flex justify-between items-center mt-4">
-                <div className="flex space-x-2">
+              </div>
+              <div className="p-4">
+                <h2 className="text-xl font-bold mb-2">{article.title}</h2>
+                <p className="text-gray-700 text-base">{article.description}</p>
+                <div className="flex justify-between items-center mt-4">
                   <button
-                    className="text-gray-500 hover:text-gray-400"
+                    className="text-gray-500 hover:text-gray-900"
                     onClick={() => handleVote(index, 1)}
                   >
                     <FaArrowUp />
                   </button>
+                  <span className="text-gray-700 font-bold">
+                    {votes[index]}
+                  </span>
                   <button
-                    className="text-gray-500 hover:text-gray-400"
+                    className="text-gray-500 hover:text-gray-900"
                     onClick={() => handleVote(index, -1)}
                   >
                     <FaArrowDown />
                   </button>
                 </div>
               </div>
+            </motion.div>
+          ))} */}
+          <div className="h-screen w-screen bg-gray-100 flex items-center justify-center">
+            <div className="text-2xl font-bold text-gray-100 prose print:prose-lg">
+              {response}
             </div>
-          </motion.div>
-        ))}
-      </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
