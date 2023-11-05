@@ -106,7 +106,7 @@ export default function FeedClient() {
       initial="hidden"
       animate="visible"
     >
-      <h1 className="text-3xl font-bold text-white font-serif">Feed</h1>
+      <h1 className="text-3xl font-bold text-white font-serif pt-12">Feed</h1>
 
       {response === "" ? (
         <div className="flex justify-center items-center">
@@ -132,7 +132,7 @@ export default function FeedClient() {
           </svg>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 w-full max-w-6xl">
+        <div className="grid grid-cols-1 gap-4 max-w-6xl max-h-[80vh]">
           {/* {articles.map((article, index) => (
             <motion.div
               key={article.title}
@@ -170,10 +170,11 @@ export default function FeedClient() {
               </div>
             </motion.div>
           ))} */}
-          <div className="h-screen w-screen  flex items-center justify-center">
-            <div className="text-2xl font-bold text-gray-100 prose print:prose-lg">
-              {response}
-            </div>
+          <div
+            className="text-lg text-gray-100 overflow-y-auto"
+            style={{ whiteSpace: "pre-wrap" }}
+          >
+            {response}
           </div>
         </div>
       )}
