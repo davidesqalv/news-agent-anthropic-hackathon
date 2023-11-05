@@ -63,7 +63,7 @@ export default function HomeClient() {
           <Link
             className="w-full bg-[#333333] hover:bg-[#4d4d4d] text-white font-bold rounded-none flex justify-center items-center"
             // type="submit"
-            href={"/onboarding"}
+            href={"/personalize"}
           >
             Sign in
           </Link>
