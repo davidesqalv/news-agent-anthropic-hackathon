@@ -136,12 +136,13 @@ export default function OnboardingClient() {
     >
       <motion.div variants={itemVariants}>
         <h1 className="text-white text-3xl font-bold font-serif">
-          Welcome to dAIly digest
+          Welcome to RituAI
         </h1>
       </motion.div>
       <motion.div variants={itemVariants}>
         <p className="text-white text-lg">
-          Select your preferred news categories:
+          For our specialized AI agent to start curating the best content for
+          you, select your preferred categories:
         </p>
       </motion.div>
       <motion.div variants={itemVariants}>
