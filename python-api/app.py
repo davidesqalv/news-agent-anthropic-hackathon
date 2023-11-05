@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
+from unittest.mock import DEFAULT
 
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
 
+from services.article_merger.article_merger import ArticleMerger
+from services.deduplication.deduplicator import Deduplicator
 from services.profiles.user_profile import UserProfile
 from services.rank_and_dedup.rank_and_dedup import RankAndDedup
+from services.ranking.ranker import Ranker
 from utils.article import Article
 from utils.db_connector import DBConnector
 
@@ -54,7 +58,7 @@ async def add_preference(preference: str):
 
 
 @app.delete("/preference")
-async def add_preference(preference: str):
+async def delete_preference(preference: str):
     """Removes a preference for the logged in user from the DB"""
     await user_collection.update_one(
         {"username": DEFAULT_USER}, {"$pull": {"preferences": preference}}
@@ -84,7 +88,7 @@ async def add_feed(feed: str):
 
 
 @app.delete("/feed")
-async def add_feed(feed: str):
+async def delete_feed(feed: str):
     """Removes a preference for the logged in user from the DB"""
     await user_collection.update_one(
         {"username": DEFAULT_USER}, {"$pull": {"feeds": feed}}
@@ -101,15 +105,37 @@ async def generate_digest():
     output = rank_and_dedup_service.rank_and_deduplicate(
         list(map(lambda a: a.extracted_content, articles)), profile, 10
     )
+    # For debugging
     print(output)
-    # TODO store in DB
-    return output
+    digests_coll = conn.get_generated_digests_collection()
+    await digests_coll.update_one(
+        {"username": DEFAULT_USER}, {"$push": {"digests": output}}
+    )
 
 
-# TODO implement using separate rank and dedup
 @app.post("/generate-digest-chained")
 async def generate_digest_chained():
-    pass
+    yesterday_ts = datetime.now() - timedelta(days=1)
+    articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
+    articles_raw = list(map(lambda a: a.extracted_content, articles))
+    profile = await fetch_user_profile(DEFAULT_USER)
+    dedup_service = Deduplicator()
+    dedup_result = dedup_service.deduplicate(articles_raw)
+    unique_articles = dedup_result.get_unique_articles(articles_raw)
+    articles_to_dedup = dedup_result.get_duplicated_articles(articles_raw)
+    merger = ArticleMerger()
+    deduped_articles = list(map(lambda d: merger.merge_articles(d), articles_to_dedup))
+    rank_service = Ranker()
+    ranked_articles = rank_service.rank_articles_get_ranked_articles(
+        deduped_articles + unique_articles, profile
+    )
+    # for Debugging
+    print(ranked_articles)
+    digests_coll = conn.get_generated_digests_collection()
+    digests_coll.update_one(
+        {"username": DEFAULT_USER},
+        {"$push": {"digests": dict(zip(range(len(ranked_articles)), ranked_articles))}},
+    )
 
 
 @app.post("/upvote")
@@ -128,6 +154,23 @@ async def downvote_article(article_id: str):
     )
 
 
+@app.post("/schedule")
+async def add_user_schedule(
+    is_daily: bool, reminder_time: datetime, day: Optional[str]
+):
+    """Adds a preference for the logged in user to the DB"""
+    await user_collection.insert_one(
+        {"username": DEFAULT_USER},
+        {
+            "schedule": {
+                "is_daily": is_daily,
+                "reminder_time": reminder_time,
+                "day": day,
+            }
+        },
+    )
+
+
 ### Helpers
 async def fetch_articles_since(username: str, timestamp: datetime) -> List[Article]:
     user_email = get_email_from_username(username)
@@ -137,7 +180,6 @@ async def fetch_articles_since(username: str, timestamp: datetime) -> List[Artic
     )
     articles = []
     for document in await cursor.to_list(length=MAX_DOCUMENTS_TO_QUERY_FROM_DB):
-        print(document)
         articles.append(
             Article(
                 document["raw_content"],
