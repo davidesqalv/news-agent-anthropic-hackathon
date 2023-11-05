@@ -160,7 +160,6 @@ def parse_articles(text):
     return json.dumps(articles, indent=2)
 
 
-# TODO implement using single rank and dedup
 @app.post("/generate-digest")
 async def generate_digest():
     now = datetime.now()

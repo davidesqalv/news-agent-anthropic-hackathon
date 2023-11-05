@@ -40,7 +40,7 @@ class RankAndDedup:
             The following is an enumerated list of articles <articleList>{article_list_string}</articleList>.
             This is a list of my preferences: {preference_list_string}
             Your task is to rank the articles based on how well they match my preferences. If two or more articles ever cover the same topic, summarize their most important points into a single, balanced article.
-            Please output the {num_requested_articles} full articles (or the summary of multiple) that best match my interests.
+            Please output the {num_requested_articles} full articles (or the summary of multiple) that best match my interests. Format it as HTML with headings.
             {AI_PROMPT}
             """,
             10000,
