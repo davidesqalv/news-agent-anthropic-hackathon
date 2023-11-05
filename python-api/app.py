@@ -1,15 +1,12 @@
 import json
 import re
-
 from datetime import datetime, timedelta
 from typing import List, Optional
-from unittest.mock import DEFAULT
 
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
-from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.requests import Request
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from services.article_merger.article_merger import ArticleMerger
@@ -46,7 +43,7 @@ app.add_middleware(
 conn = DBConnector()
 user_collection = conn.get_user_collection()
 
-DEFAULT_USER = "test"
+DEFAULT_USER = "demo@rituai.email"
 MAX_DOCUMENTS_TO_QUERY_FROM_DB = 500
 
 
@@ -148,6 +145,7 @@ async def delete_feed(feed: str):
         {"username": DEFAULT_USER}, {"$pull": {"feeds": feed}}
     )
 
+
 def parse_articles(text):
     articles = []
 
@@ -155,21 +153,23 @@ def parse_articles(text):
         number = match.group(1)
         title = ""
         summary = ""
-        
+
         article = {"number": number, "title": title, "summary": summary}
         articles.append(article)
 
     return json.dumps(articles, indent=2)
+
 
 # TODO implement using single rank and dedup
 @app.post("/generate-digest")
 async def generate_digest():
     now = datetime.now()
     yesterday_ts = now - timedelta(days=1)
-    articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
-    print('getting profile')
+    user_email = get_email_from_username(DEFAULT_USER)
+    articles = await fetch_articles_since(user_email, yesterday_ts)
+    print("getting profile")
     profile = await fetch_user_profile(DEFAULT_USER)
-    print('ranking and deduping')
+    print("ranking and deduping")
     rank_and_dedup_service = RankAndDedup()
     output = rank_and_dedup_service.rank_and_deduplicate(
         list(map(lambda a: a.extracted_content, articles)), profile, 10
@@ -178,10 +178,16 @@ async def generate_digest():
     print(output)
     digests_coll = conn.get_generated_digests_collection()
     await digests_coll.insert_one(
-        {"username": DEFAULT_USER, "generated_at": now, "digest": output}
+        {
+            "username": DEFAULT_USER,
+            "email": user_email,
+            "generated_at": now,
+            "digest": output,
+        }
     )
     # return parse_articles(output)
     return output
+
 
 # @app.get("/last-generated-digest")
 # async def get_last_generated_digest():
@@ -200,7 +206,8 @@ async def generate_digest():
 async def generate_digest_chained():
     now = datetime.now()
     yesterday_ts = now - timedelta(days=1)
-    articles = await fetch_articles_since(DEFAULT_USER, yesterday_ts)
+    user_email = get_email_from_username(DEFAULT_USER)
+    articles = await fetch_articles_since(user_email, yesterday_ts)
     articles_raw = list(map(lambda a: a.extracted_content, articles))
     profile = await fetch_user_profile(DEFAULT_USER)
     dedup_service = Deduplicator()
@@ -219,6 +226,7 @@ async def generate_digest_chained():
     digests_coll.insert_one(
         {
             "username": DEFAULT_USER,
+            "email": user_email,
             "timestamp": now,
             "digest_dict": dict(zip(range(len(ranked_articles)), ranked_articles)),
         },
@@ -233,6 +241,7 @@ async def upvote_article(article_id: str):
     # )
 
     await update_user_fields(user_collection, DEFAULT_USER, {"upvotes": [article_id]})
+
 
 @app.post("/downvote")
 async def downvote_article(article_id: str):
@@ -299,8 +308,7 @@ async def add_user_schedule(request: Request):
 
 
 ### Helpers
-async def fetch_articles_since(username: str, timestamp: datetime) -> List[Article]:
-    user_email = get_email_from_username(username)
+async def fetch_articles_since(user_email: str, timestamp: datetime) -> List[Article]:
     articles_collection = conn.get_incoming_data_collection()
     cursor = articles_collection.find(
         {"email_recipient": user_email, "received_at": {"$gt": timestamp}}
@@ -328,4 +336,4 @@ async def fetch_user_profile(username: str) -> UserProfile:
 
 def get_email_from_username(username: str) -> str:
     # TODO: Fix by actually getting the email
-    return "demo@rituai.email"
+    return DEFAULT_USER
