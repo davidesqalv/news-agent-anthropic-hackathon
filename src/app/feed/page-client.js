@@ -77,9 +77,9 @@ export default function FeedClient() {
     fetchImages();
   }, []);
 
-  useEffect(() => {
-    console.log(images);
-  }, [images]);
+  //   useEffect(() => {
+  //     console.log(images);
+  //   }, [images]);
 
   const handleVote = (index, value) => {
     const newVotes = [...votes];
@@ -98,7 +98,7 @@ export default function FeedClient() {
 
       <div className="grid grid-cols-1 gap-4 w-full max-w-6xl">
         <p className="text-white text-center">
-          Here's your ritual AI curated feed. You can upvote or downvote
+          Here&apos;s your ritual AI curated feed. You can upvote or downvote
           articles to help us learn your preferences.
         </p>
         {articles.map((article, index) => (
