@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { redirect } from "next/navigation";
+import { useState } from "react";
 
 const containerVariants = {
   hidden: {
@@ -121,7 +121,7 @@ export default function OnboardingClient() {
         }
         setLoading(false);
         // handle successful response
-        console.log(`response:`);
+        console.log(`response this is my change:`);
         console.log(response);
         setRedirectPage(true);
       })
@@ -159,11 +159,10 @@ export default function OnboardingClient() {
           {preferences.map((preference) => (
             <button
               key={preference}
-              className={`px-4 py-2 rounded-full m-2 ${
-                selectedPreferences.includes(preference)
+              className={`px-4 py-2 rounded-full m-2 ${selectedPreferences.includes(preference)
                   ? "bg-gray-500 text-white"
                   : "bg-white text-gray-500"
-              }`}
+                }`}
               onClick={() => handlePreferenceClick(preference)}
             >
               {preference}
