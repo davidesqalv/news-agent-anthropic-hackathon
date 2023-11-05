@@ -132,7 +132,7 @@ export default function FeedClient() {
           </svg>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 max-w-6xl max-h-[80vh]">
+        <div className="grid grid-cols-1 gap-4 max-w-5xl max-h-[80vh]">
           {/* {articles.map((article, index) => (
             <motion.div
               key={article.title}
