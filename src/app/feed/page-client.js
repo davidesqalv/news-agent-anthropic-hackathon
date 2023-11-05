@@ -170,7 +170,7 @@ export default function FeedClient() {
               </div>
             </motion.div>
           ))} */}
-          <div className="h-screen w-screen bg-gray-100 flex items-center justify-center">
+          <div className="h-screen w-screen  flex items-center justify-center">
             <div className="text-2xl font-bold text-gray-100 prose print:prose-lg">
               {response}
             </div>
