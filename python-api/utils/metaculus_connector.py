@@ -1,18 +1,19 @@
 import os
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import requests
 
+from utils.metaculus_types import MetaculusCategory, MetaculusQuestion
+
 
 class MetaculusConnector:
+    BASE_API_PATH = "https://www.metaculus.com/api2/"
+
     def __init__(self) -> None:
         pass
 
-    def get_questions_for_topic(
-        self, topic: str, max_num_questions: int = 100
-    ) -> List[Any]:
+    def get_questions_for_topic(self, topic: str, limit: int = 5) -> List[Any]:
+        # TODO impl
         pass
 
     def get_all_categories(self) -> List[MetaculusCategory]:
@@ -40,121 +41,34 @@ class MetaculusConnector:
             )
         )
 
+    def get_questions_from_category(
+        self, category: str, limit: int = 20
+    ) -> List[MetaculusQuestion]:
+        # TODO currently gets questions in chronological order, oldest first - invert
+        # or maybe sort by popularity/...
+        result = []
+        next_call = f"questions/?categories={category}"
+        while len(result) < limit:
+            data = self._metaculus_api_call(next_call)
+            if not data["results"]:
+                break
+            new_questions = list(map(lambda q: MetaculusQuestion(**q), data["results"]))
+            result += new_questions
+            if len(result) < limit:
+                next_call = data["next"][len(MetaculusConnector.BASE_API_PATH) :]
+            else:
+                result = result[:limit]
+        return result
+
+    def get_question_by_id(self, question_id: int) -> Optional[MetaculusQuestion]:
+        data = self._metaculus_api_call(f"questions/{str(question_id)}")
+        return MetaculusQuestion(**data)
+
     def _metaculus_api_call(self, path: str) -> Any:
         resp = requests.get(
-            "https://www.metaculus.com/api2/" + path,
+            MetaculusConnector.BASE_API_PATH + path,
             headers={"Authorization": "Token " + os.environ["METACULUS_API_KEY"]},
         )
+        print(resp.json()["results"][0].keys())
         resp.raise_for_status()
         return resp.json()
-
-    # requests.get("https://www.metaculus.com/api2/categories?limit=100", headers={'Authorization':'Token x'})
-    # resp = requests.get("https://www.metaculus.com/api2/questions/19308", headers={'Authorization':'Token x'})
-    # requests.get("https://www.metaculus.com/api2/questions/?categories=geopolitics&close_time__gt=2023-11-06T17:33:28Z", headers={'Authorization':'Token x'})
-
-
-@dataclass
-class MetaculusCategory:
-    id: str
-    url: str
-    short_name: str
-    long_name: str
-
-
-@dataclass
-class MetaculusQuestion:
-    active_state: str
-    url: str
-    page_url: str
-    id: int
-    author: int
-    author_name: str
-    title: str
-    title_short: str
-    group_label: str
-    resolution: Optional[float]
-    created_time: str  # datetime string
-    publish_time: str
-    close_time: str
-    effected_close_time: str
-    resolve_time: str
-    possibilities: Dict
-    scoring: Dict
-    type: str
-    user_perms: Any
-    weekly_movement: float
-    weekly_movement_direction: int
-    cp_reveal_time: str
-    edited_time: str
-    last_activity_time: str
-    activity: float
-    comment_count: int
-    votes: int
-    community_prediction: Optional[Dict]
-    metaculus_prediction: Optional[Dict]
-    number_of_forecasters: Optional[int]
-    prediction_count: int
-    related_questions: List[Any]
-    group: Optional[int]
-    condition: Any
-    sub_questions: List[Any]
-    has_fan_graph: bool
-    projects: Any
-    community_absolute_log_score: Optional[float]
-    metaculus_absolute_log_score: Optional[float]
-    metaculus_relative_log_score: Optional[float]
-    user_vote: int
-    my_predictions: Optional[Any]
-    divergence: Optional[Any]
-    peer_score: Optional[Any]
-    baseline_score: Optional[Any]
-    status: str  # Enum: I, T or V
-    prediction_histogram: List[List[float]]
-    prediction_timeseries: List[Dict[str, float]]
-
-    @property
-    def created_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.created_time)
-
-    @property
-    def publish_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.publish_time)
-
-    @property
-    def close_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.close_time)
-
-    @property
-    def effected_close_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.effected_close_time)
-
-    @property
-    def resolve_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.resolve_time)
-
-    @property
-    def cp_reveal_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.cp_reveal_time)
-
-    @property
-    def edited_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.edited_time)
-
-    @property
-    def last_activity_time_ts(self) -> datetime:
-        return datetime.fromisoformat(self.last_activity_time)
-
-
-@dataclass
-class MetaculusTimeseries:
-    t: float
-    community_prediction: float
-    num_predictions: int
-    distribution: MetaculusDistribution
-
-
-@dataclass
-class MetaculusDistribution:
-    num: int
-    avg: float
-    var: float

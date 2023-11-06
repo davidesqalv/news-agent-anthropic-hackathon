@@ -16,6 +16,7 @@ from services.rank_and_dedup.rank_and_dedup import RankAndDedup
 from services.ranking.ranker import Ranker
 from utils.article import Article
 from utils.db_connector import DBConnector
+from utils.metaculus_connector import MetaculusConnector
 
 # Main backend app. Run with e.g. `uvicorn app:app --host 0.0.0.0 --port 8000` from
 # within the `python-api` folder
@@ -336,3 +337,12 @@ async def fetch_user_profile(username: str) -> UserProfile:
 def get_email_from_username(username: str) -> str:
     # TODO: Fix by actually getting the email
     return DEFAULT_USER
+
+
+# TODO remove
+m = MetaculusConnector()
+qs = m.get_questions_from_category("bio", limit=2)
+print(qs[0].title)
+print(qs[0].id)
+print(qs[1].title)
+print(qs[1].id)
